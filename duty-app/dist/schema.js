@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const graphql_1 = require("graphql");
 const pg_1 = require("pg");
 const pool = new pg_1.Pool({
-    user: "your_username",
+    user: "postgres",
     host: "localhost",
     database: "dutydb",
-    password: "your_password",
+    password: "1994tutski3",
     port: 5432,
 });
 const DutyType = new graphql_1.GraphQLObjectType({
