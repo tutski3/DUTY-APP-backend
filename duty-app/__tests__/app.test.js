@@ -3,7 +3,7 @@ const express = require("express");
 const { ApolloServer, gql } = require("apollo-server-express");
 const createTestClient = require("apollo-server-testing").createTestClient;
 
-// Your GraphQL schema and resolvers
+
 const typeDefs = gql`
   type Duty {
     id: String
