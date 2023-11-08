@@ -2,7 +2,7 @@ const request = require("supertest");
 const express = require("express");
 const { ApolloServer, gql } = require("apollo-server-express");
 const createTestClient = require("apollo-server-testing").createTestClient;
-
+const { Pool } = require("pg");
 
 const typeDefs = gql`
   type Duty {
@@ -21,14 +21,31 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    duties: () => [
-      { id: "1", name: "Duty 1" },
-      { id: "2", name: "Duty 2" },
-    ],
+    duties: async () => {
+      const pool = new Pool({
+        user: "postgres",
+        host: "localhost",
+        database: "dutydb",
+        password: "1994tutski3",
+        port: 5432,
+      });
+      const result = await pool.query("SELECT * FROM duties");
+      return result.rows;
+    },
   },
   Mutation: {
-    addDuty: (_, { name }) => {
-      return { id: "3", name };
+    addDuty: async (_, { name }) => {
+      const pool = new Pool({
+        user: "postgres",
+        host: "localhost",
+        database: "dutydb",
+        password: "1994tutski3",
+        port: 5432,
+      });
+      const query = "INSERT INTO duties (name) VALUES ($1) RETURNING *";
+      const values = [name];
+      const result = await pool.query(query, values);
+      return result.rows[0];
     },
   },
 };
@@ -37,18 +54,38 @@ describe("GraphQL API tests", () => {
   let server;
   let testClient;
 
-  const { ApolloServer } = require("apollo-server-express");
   beforeAll(async () => {
     server = new ApolloServer({
       typeDefs,
       resolvers,
     });
     await server.start();
-    
+
     const app = express();
     server.applyMiddleware({ app });
 
     testClient = createTestClient(server);
+  });
+
+  afterAll(async () => {
+    try {
+      
+      const pool = new Pool({
+        user: "postgres",
+        host: "localhost",
+        database: "dutydb",
+        password: "1994tutski3",
+        port: 5432,
+      });
+  
+      
+      await pool.query("DELETE FROM duties WHERE name = 'Test Duty'");
+  
+      
+      await pool.end();
+    } catch (error) {
+      console.error("Error cleaning up the database:", error);
+    }
   });
 
   it("should get duties", async () => {
@@ -61,8 +98,8 @@ describe("GraphQL API tests", () => {
       }
     `;
 
-    const { data } = await testClient.query({ query: GET_DUTIES });
-    expect(data.duties).toHaveLength(2);
+    const { data } = await testClient.query({ query: GET_DUTIES }); 
+    expect(data.duties).toHaveLength(2); 
   });
 
   it("should add a duty", async () => {
@@ -77,6 +114,8 @@ describe("GraphQL API tests", () => {
 
     const variables = { name: "New Duty" };
     const { data } = await testClient.mutate({ mutation: ADD_DUTY, variables });
+
+    
     expect(data.addDuty.name).toBe("New Duty");
   });
 });
